@@ -175,8 +175,7 @@ mod ffi {
 mod ffi {
     #![allow(non_upper_case_globals, dead_code)]
 
-    use crate::ScreenResult;
-    use crate::Screenshot;
+    use crate::{ScreenResult, Screenshot};
     use std::slice;
 
     type CFIndex = libc::c_long;
@@ -291,8 +290,7 @@ mod ffi {
 
     use libc::{c_int, c_long, c_uint, c_void};
 
-    use crate::ScreenResult;
-    use crate::Screenshot;
+    use crate::{ScreenResult, Screenshot};
 
     type PVOID = *mut c_void;
     type LPVOID = *mut c_void;

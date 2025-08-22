@@ -1,8 +1,5 @@
-use bmp::{Image, Pixel};
-use screenshot::get_screenshot;
-
 fn main() {
-    let s = get_screenshot(0).unwrap();
+    let s = screenshot::get_screenshot(0).unwrap();
 
     println!(
         "{} x {} x {} = {} bytes",
@@ -25,7 +22,7 @@ fn main() {
     println!("(end,end): R: {}, G: {}, B: {}", opp.r, opp.g, opp.b);
 
     // WARNING rust-bmp params are (width, height)
-    let mut img = Image::new(s.width() as u32, s.height() as u32);
+    let mut img = bmp::Image::new(s.width() as u32, s.height() as u32);
     for row in 0..s.height() {
         for col in 0..s.width() {
             let p = s.get_pixel(row, col);
@@ -33,7 +30,7 @@ fn main() {
             img.set_pixel(
                 col as u32,
                 row as u32,
-                Pixel {
+                bmp::Pixel {
                     r: p.r,
                     g: p.g,
                     b: p.b,
@@ -43,9 +40,20 @@ fn main() {
     }
     img.save("test.bmp").unwrap();
 
+    // Convert BGRA to RGBA
+    let raw = s.as_ref();
+    let mut rgba_buf = Vec::with_capacity(raw.len());
+    for chunk in raw.chunks(4) {
+        if chunk.len() == 4 {
+            rgba_buf.push(chunk[2]); // R
+            rgba_buf.push(chunk[1]); // G
+            rgba_buf.push(chunk[0]); // B
+            rgba_buf.push(chunk[3]); // A
+        }
+    }
     image::save_buffer(
         "test.png",
-        s.as_ref(),
+        &rgba_buf,
         s.width() as u32,
         s.height() as u32,
         image::ColorType::Rgba8,
