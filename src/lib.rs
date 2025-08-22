@@ -106,11 +106,10 @@ pub type ScreenResult = Result<Screenshot, &'static str>;
 mod ffi {
     use crate::{ScreenResult, Screenshot};
     use libc::{c_int, c_uint};
-    use std::mem;
     use std::ptr::null_mut;
     use std::slice;
-    use xlib::{
-        XAllPlanes, XCloseDisplay, XDestroyWindow, XGetImage, XGetWindowAttributes, XImage,
+    use x11::xlib::{
+        XAllPlanes, XCloseDisplay, XDestroyImage, XDestroyWindow, XGetImage, XGetWindowAttributes,
         XOpenDisplay, XRootWindowOfScreen, XScreenOfDisplay, XWindowAttributes, ZPixmap,
     };
 
@@ -136,17 +135,12 @@ mod ffi {
             );
             XDestroyWindow(display, root);
             XCloseDisplay(display);
-            // This is the function which XDestroyImage macro calls.
-            // servo/rust-xlib doesn't handle function pointers correctly.
-            // We have to transmute the variable.
-            let destroy_image: extern "C" fn(*mut XImage) -> c_int =
-                mem::transmute(img.f.destroy_image);
             let height = img.height as usize;
             let width = img.width as usize;
             let row_len = img.bytes_per_line as usize;
             let pixel_bits = img.bits_per_pixel as usize;
             if pixel_bits % 8 != 0 {
-                destroy_image(&mut *img);
+                XDestroyImage(&mut *img);
                 return Err("Pixels aren't integral bytes.");
             }
             let pixel_width = pixel_bits / 8;
@@ -154,7 +148,7 @@ mod ffi {
             // Create a Vec for image
             let size = width * height * pixel_width;
             let mut data = slice::from_raw_parts(img.data as *mut u8, size as usize).to_vec();
-            destroy_image(&mut *img);
+            XDestroyImage(&mut *img);
 
             // Fix Alpha channel when xlib cannot retrieve info correctly
             let has_alpha = data.iter().enumerate().any(|(n, x)| n % 4 == 3 && *x != 0);
